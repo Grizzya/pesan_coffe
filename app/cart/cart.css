@@ -1,0 +1,138 @@
+/* app/cart/cart.css */
+
+.cart-page-container {
+  width: 100%;
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 20px;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+  color: #333;
+}
+
+.cart-nav a {
+  text-decoration: none;
+  color: #3a6a4a;
+  font-weight: 600;
+  display: inline-block;
+  margin-bottom: 20px;
+}
+
+.cart-main h1 {
+  font-size: 28px;
+  font-weight: bold;
+  margin-bottom: 24px;
+  color: #000;
+}
+
+.cart-empty {
+  text-align: center;
+  padding: 50px;
+  background-color: #f6f6f6;
+  border-radius: 8px;
+}
+
+.cart-content {
+  display: grid;
+  grid-template-columns: 2fr 1fr; /* 2/3 untuk daftar, 1/3 untuk ringkasan */
+  gap: 24px;
+}
+
+.cart-items-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.cart-item {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 16px;
+  background-color: #fff;
+  border: 1px solid #eee;
+  border-radius: 8px;
+}
+
+.item-image {
+  border-radius: 8px;
+  object-fit: cover;
+}
+
+.item-details {
+  flex-grow: 1;
+}
+
+.item-details h3 {
+  margin: 0 0 4px 0;
+  font-size: 16px;
+  font-weight: 600;
+  color: #000;
+}
+
+.item-options {
+  margin: 0;
+  font-size: 14px;
+  color: #555;
+}
+
+.item-price {
+  margin: 4px 0 0 0;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.item-remove-button {
+  background: none;
+  border: none;
+  color: #d9534f;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.cart-summary-box {
+  background-color: #f6f6f6;
+  border-radius: 8px;
+  padding: 20px;
+  height: fit-content;
+}
+
+.cart-summary-box h2 {
+  font-size: 18px;
+  font-weight: 600;
+  margin: 0 0 16px 0;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 12px;
+  font-size: 14px;
+}
+.summary-row.total {
+  font-weight: bold;
+  font-size: 16px;
+  color: #000;
+  border-top: 1px solid #ddd;
+  padding-top: 12px;
+}
+
+.checkout-button-full {
+  width: 100%;
+  background-color: #3a6a4a;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  padding: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 16px;
+}
+
+/* Responsif untuk HP */
+@media (max-width: 768px) {
+  .cart-content {
+    grid-template-columns: 1fr;
+  }
+}

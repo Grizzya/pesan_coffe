@@ -1,0 +1,62 @@
+.card {
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1); /* sedikit bayangan halus */
+  overflow: hidden;
+  text-align: center;
+  padding: 10px 10px 15px;
+  font-family: 'Inter', sans-serif;
+  border: none;
+  width: 169px;
+  height:269px;
+  
+}
+
+.card-image-container {
+  position: relative;
+  width: 100%;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.card-image {
+  width: 149px;
+  height: 149px;
+  display: block;
+  border-top-left-radius: 15px;
+  border-top-right-radius: 80px;
+  border-bottom-right-radius: 15px;
+  border-bottom-left-radius: 15px;
+}
+
+.card-plus {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  background: #000;
+  color: #fff;
+  font-weight: bold;
+  border-radius: 50%;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+}
+
+.card-content {
+  margin-top: 10px;
+}
+
+.card-content h3 {
+  margin: 0;
+  font-size: 16px;
+  color: #000;
+}
+
+.card-content p {
+  margin: 5px 0 0;
+  font-size: 14px;
+  color: #000;
+}

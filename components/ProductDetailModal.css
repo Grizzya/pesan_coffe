@@ -1,0 +1,152 @@
+/* ========================================
+ ⚙️ CSS MODAL (Desktop)
+======================================== */
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  /* (Animasi 'fadeIn' sekarang ada di file .tsx) */
+}
+
+.modal-content {
+  position: relative;
+  background-color: #f6f6f6;
+  width: 95%;
+  max-width: 550px !important;
+  height: 80vh;
+  border-radius: 16px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  /* (Animasi 'scaleIn' sekarang ada di file .tsx) */
+}
+
+/* ... (Sisa CSS Tuan .option-section, .option-button, dll.) ... */
+.modal-close-button {
+  position: absolute;
+  top: 10px;
+  right: 15px;
+  background: none;
+  border: none;
+  font-size: 28px;
+  color: #555;
+  cursor: pointer;
+  z-index: 2000;
+}
+.modal-title {
+  text-align: center;
+  color: #3a6a4a;
+  font-size: 28px;
+  font-weight: bold;
+  padding: 20px 0;
+  margin: 0;
+}
+.modal-options-container {
+  flex-grow: 1;
+  overflow-y: auto;
+  padding: 0 20px;
+}
+.option-section {
+  margin-bottom: 20px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid #ddd;
+  text-align: center;
+}
+.option-section:last-child {
+  border-bottom: none;
+}
+.option-title {
+  text-align: center;
+  color: #555;
+  font-weight: 600;
+  margin-bottom: 10px;
+}
+.option-buttons {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  justify-items: center;
+  align-items: center;
+  width: 100%;
+}
+.option-button {
+  background-color: #f6f6f6;
+  border: 1.5px solid #3a6a4a;
+  color: #3a6a4a;
+  border-radius: 20px;
+  padding: 10px 0;
+  width: 120px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 500;
+}
+.option-button span {
+  font-size: 12px;
+  color: #333;
+  margin-top: 2px;
+}
+.option-button.selected {
+  background-color: #d3ffde;
+  border-width: 2px;
+  font-weight: 700;
+  color: #2f5a3c;
+}
+.modal-add-button {
+  width: 100%;
+  background-color: #3a6a4a;
+  color: white;
+  border: none;
+  padding: 20px 0;
+  font-size: 18px;
+  font-weight: bold;
+  cursor: pointer;
+  margin-top: auto;
+}
+.modal-add-button:hover {
+  background-color: #2f5a3c;
+}
+
+
+/* ========================================
+ ⚙️ CSS HP (Responsif)
+======================================== */
+
+@media (max-width: 480px) {
+  .modal-content {
+    width: 100%;
+    height: 100vh;
+    max-width: 100%;
+    border-radius: 0;
+    
+    /* ⚙️ HAPUS BARIS @apply DARI SINI */
+    /* @apply animate-in slide-in-from-bottom-full duration-300; */
+  }
+
+  .option-buttons {
+    grid-template-columns: repeat(2, 1fr) !important;
+     gap: 4px
+  }
+
+  .modal-close-button {
+    display: block !important;
+    position: absolute;
+    top: 10px;
+    right: 15px;
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #555;
+    z-index: 2000;
+    cursor: pointer;
+  }
+}

@@ -1,0 +1,24 @@
+// HAPUS baris "prisma/schema.prisma" yang mungkin ada di atas ini
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// INI BAGIAN YANG DIPERBAIKI
+datasource db {
+  provider = "mysql" 
+  url      = env("DATABASE_URL") 
+}
+
+// Model untuk produk kopi Anda
+model Product {
+  id          String   @id @default(cuid())
+  
+  name        String
+  description String
+  price       Int
+  imageUrl    String?
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
