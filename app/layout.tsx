@@ -23,6 +23,11 @@ export default function RootLayout({
           <Header />
           <main className="min-h-screen">{children}</main>
         </CartProvider>
+        
+        <script
+          src="https://app.sandbox.midtrans.com/snap/snap.js"
+          data-client-key={process.env.NEXT_PUBLIC_MIDTRANS_CLIENT_KEY}/>
+
       </body>
     </html>
   );

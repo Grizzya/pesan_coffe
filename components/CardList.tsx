@@ -10,24 +10,29 @@ interface Product {
 }
 
 interface CardListProps {
-  category: string;
-  onProductClick: (product: Product) => void; 
+  category: string; // "" = semua kategori
+  onProductClick: (product: Product) => void;
 }
 
 const CardList: React.FC<CardListProps> = ({ category, onProductClick }) => {
   const [cards, setCards] = useState<Product[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState<boolean>(true);
 
   useEffect(() => {
-    async function fetchData() {
+    const fetchData = async () => {
       setLoading(true);
+
       try {
-        const res = await fetch(`/api/products?category=${category}`);
+        // kalau category kosong => ambil semua produk
+        const url = category
+          ? `/api/products?category=${encodeURIComponent(category)}`
+          : "/api/products";
+
+        const res = await fetch(url);
 
         if (!res.ok) {
-          console.error("Gagal mengambil data dari API:", res.statusText);
+          console.error("Gagal mengambil data dari API:", res.status, res.statusText);
           setCards([]);
-          setLoading(false);
           return;
         }
 
@@ -39,21 +44,31 @@ const CardList: React.FC<CardListProps> = ({ category, onProductClick }) => {
           console.error("Data yang diterima dari API bukan array:", data);
           setCards([]);
         }
-
       } catch (err) {
         console.error("Gagal memuat data produk:", err);
         setCards([]);
+      } finally {
+        setLoading(false);
       }
-      setLoading(false);
-    }
+    };
+
     fetchData();
   }, [category]);
 
-
-  if (loading) return <div className="text-center italic text-gray-500 py-10">Memuat produk...</div>;
+  if (loading) {
+    return (
+      <div className="text-center italic text-gray-500 py-10">
+        Memuat produk...
+      </div>
+    );
+  }
 
   if (!Array.isArray(cards) || cards.length === 0) {
-    return <div className="text-center italic text-gray-500 py-10">Tidak ada produk.</div>;
+    return (
+      <div className="text-center italic text-gray-500 py-10">
+        Tidak ada produk.
+      </div>
+    );
   }
 
   return (
@@ -69,7 +84,7 @@ const CardList: React.FC<CardListProps> = ({ category, onProductClick }) => {
         <Card
           key={item.id}
           title={item.title}
-          price={item.price.toString()}
+          price= {item.price.toString()}
           image={item.image}
           onClick={() => onProductClick(item)}
         />

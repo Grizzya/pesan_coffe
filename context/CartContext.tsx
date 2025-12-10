@@ -1,70 +1,139 @@
-// context/CartContext.tsx
 "use client";
 
-import React, { createContext, useContext, useState, ReactNode } from 'react';
+import React, { createContext, useContext, useEffect, useState } from "react";
 
-// Tentukan tipe data
-interface Product {
-  id: number;
+
+// Tipe produk - sesuaikan bila di project-mu ada fields lain
+
+export interface Product {
+  id: number | string;
   title: string;
   price: number;
-  image: string;
+  image?: string;
 }
 
-interface CartOptions {
-  sugar: string;
-  ice: string;
+
+ //Opsi tambahan tiap item (misal: sugar, ice)
+
+export interface CartOptions {
+  sugar?: string;
+  ice?: string;
+  [key: string]: any;
 }
+
+
+ //Item yang disimpan di keranjang
 
 export interface CartItem {
-  id: string; // ID unik untuk setiap item di keranjang
+  id: string;           
   product: Product;
-  options: CartOptions;
+  options?: CartOptions;
+  quantity: number;     
 }
 
-// Tentukan apa yang akan disediakan oleh Context
+/**
+ * Tipe context yang diekspos
+ */
 interface CartContextType {
   cartItems: CartItem[];
-  addToCart: (product: Product, options: CartOptions) => void;
+  addToCart: (product: Product, options?: CartOptions, quantity?: number) => void;
   removeFromCart: (itemId: string) => void;
-  totalItems: number;
+  updateQuantity: (itemId: string, quantity: number) => void;
+  clearCart: () => void;
+  totalItems: number; // jumlah semua qty
+  totalPrice: number; // total harga (product.price * qty)
 }
 
-// Buat Context
+/**
+ * Buat context
+ */
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-// Buat Provider (Penyedia State)
-export const CartProvider: React.FC<{ children: ReactNode }> = ({ children }) => {
+/**
+ * Provider
+ */
+export const CartProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   const [cartItems, setCartItems] = useState<CartItem[]>([]);
 
-  const addToCart = (product: Product, options: CartOptions) => {
+  //optional: persist ke localStorage supaya data tidak hilang saat reload
+  useEffect(() => {
+    try {
+      const raw = localStorage.getItem("pc_cart_v1");
+      if (raw) {
+        const parsed: CartItem[] = JSON.parse(raw);
+        setCartItems(parsed);
+      }
+    } catch (e) {
+      // ignore parse errors
+      console.warn("Gagal load cart dari localStorage", e);
+    }
+  }, []);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem("pc_cart_v1", JSON.stringify(cartItems));
+    } catch (e) {
+      // ignore storage errors
+      console.warn("Gagal simpan cart ke localStorage", e);
+    }
+  }, [cartItems]);
+
+  // --- addToCart: menambahkan item baru (default quantity = 1) ---
+  const addToCart = (product: Product, options: CartOptions = {}, quantity = 1) => {
     const newItem: CartItem = {
-      id: `${product.id}_${Date.now()}`, // Buat ID unik
+      id: `${product.id}_${Date.now()}`,
       product,
       options,
+      quantity: Math.max(1, Math.floor(quantity)),
     };
-    setCartItems(prevItems => [...prevItems, newItem]);
+    setCartItems((prev) => [...prev, newItem]);
     console.log("Item ditambahkan:", newItem);
   };
 
+  // --- removeFromCart by cart item id ---
   const removeFromCart = (itemId: string) => {
-    setCartItems(prevItems => prevItems.filter(item => item.id !== itemId));
+    setCartItems((prev) => prev.filter((it) => it.id !== itemId));
   };
 
-  const totalItems = cartItems.length;
+  // --- update quantity (set specific quantity) ---
+  const updateQuantity = (itemId: string, quantity: number) => {
+    const q = Math.max(1, Math.floor(quantity));
+    setCartItems((prev) => prev.map((it) => (it.id === itemId ? { ...it, quantity: q } : it)));
+  };
+
+  // --- clear cart ---
+  const clearCart = () => {
+    setCartItems([]);
+  };
+
+  // --- derived values ---
+  const totalItems = cartItems.reduce((s, it) => s + (it.quantity ?? 1), 0);
+  const totalPrice = cartItems.reduce((s, it) => s + (Number(it.product.price) || 0) * (it.quantity ?? 1), 0);
 
   return (
-    <CartContext.Provider value={{ cartItems, addToCart, removeFromCart, totalItems }}>
+    <CartContext.Provider
+      value={{
+        cartItems,
+        addToCart,
+        removeFromCart,
+        updateQuantity,
+        clearCart,
+        totalItems,
+        totalPrice,
+      }}
+    >
       {children}
     </CartContext.Provider>
   );
 };
 
-// Buat Hook (jalan pintas untuk memakai context)
-export const useCart = () => {
-  const context = useContext(CartContext);
-  if (context === undefined) {
-    throw new Error('useCart harus digunakan di dalam CartProvider');
+/**
+ * Hook helper untuk konsumsi context
+ */
+export function useCart(): CartContextType {
+  const ctx = useContext(CartContext);
+  if (!ctx) {
+    throw new Error("useCart must be used within CartProvider");
   }
-  return context;
-};
+  return ctx;
+}
