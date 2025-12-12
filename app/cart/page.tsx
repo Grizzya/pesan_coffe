@@ -39,7 +39,7 @@ export default function CartPage() {
     await handlePayment(details.name, details.email);
   };
 
-  // ====== HANDLE PAYMENT ======
+  // HANDLE PAYMENT
   const handlePayment = async (name: string, email: string) => {
     if (cartItems.length === 0) {
       alert("Keranjang kosong.");
@@ -49,7 +49,7 @@ export default function CartPage() {
     setIsProcessing(true);
 
     try {
-      // siapkan item list untuk Midtrans
+      // item list untuk Midtrans
       const itemsForMidtrans = cartItems.map((it) => ({
         id: String(it.product.id),
         price: Number(it.product.price),
@@ -57,7 +57,7 @@ export default function CartPage() {
         name: it.product.title,
       }));
 
-      // Panggil API server-side yang membuat transaksi Midtrans (route.ts yang sudah kamu siapkan)
+      // Panggil API transaksi Midtrans
       const res = await fetch("/api/payment/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -65,8 +65,7 @@ export default function CartPage() {
           name,
           email,
           total: totalPrice,
-          items: itemsForMidtrans,
-          // optional: include your own order_id if you create DB record first
+          items: itemsForMidtrans, 
         }),
       });
 
@@ -83,9 +82,8 @@ export default function CartPage() {
       window.snap.pay(data.token, {
         onSuccess: async function (result: any) {
           console.log("Midtrans success:", result);
-          // Optional: inform backend (non-authoritative — Midtrans notif server adalah sumber kebenaran)
           try {
-            await fetch("/api/payment/record", { // optional endpoint
+            await fetch("/api/payment/record", {
               method: "POST",
               headers: { "Content-Type": "application/json" },
               body: JSON.stringify({ result, customerName: name, customerEmail: email })

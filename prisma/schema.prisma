@@ -1,24 +1,36 @@
-// HAPUS baris "prisma/schema.prisma" yang mungkin ada di atas ini
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
 
 generator client {
   provider = "prisma-client-js"
 }
 
-// INI BAGIAN YANG DIPERBAIKI
-datasource db {
-  provider = "mysql" 
-  url      = env("DATABASE_URL") 
+model transactions {
+  id                      Int                   @id @default(autoincrement())
+  order_id                String                @unique
+  user_id                 Int?
+  email                   String?
+  total_amount            Int
+  status                  String
+  payment_type            String?
+  midtrans_transaction_id String?
+  fraud_status            String?
+  source                  String?               // 'web'
+  raw_payload             String?
+  created_at              DateTime @default(now())
+  updated_at              DateTime @updatedAt
+  transaction_details     transaction_details[]
 }
 
-// Model untuk produk kopi Anda
-model Product {
-  id          String   @id @default(cuid())
-  
-  name        String
-  description String
-  price       Int
-  imageUrl    String?
-
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+model transaction_details {
+  id             Int          @id @default(autoincrement())
+  transaction_id Int
+  product_id     Int?
+  product_name   String
+  qty            Int
+  price          Int
+  subtotal       Int
+  transactions   transactions @relation(fields: [transaction_id], references: [id], onDelete: Cascade)
 }
