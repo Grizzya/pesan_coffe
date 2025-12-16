@@ -1,51 +1,47 @@
 export const runtime = "nodejs";
-
 import { NextResponse } from "next/server";
 import crypto from "crypto";
-
+import prisma from "@/lib/prisma";
 
 export async function POST(req: Request) {
   try {
-    const body = await req.json();
-    console.log("[MIDTRANS NOTIF] payload:", body);
+    const body = (await req.json()) as Record<string, any>;
 
     const {
       order_id,
       status_code,
       gross_amount,
-      signature_key: incomingSignature,
+      signature_key,
       transaction_status,
       payment_type,
-      fraud_status,
-    } = body as Record<string, any>;
+    } = body;
 
+    // Validasi signature
     const serverKey = process.env.MIDTRANS_SERVER_KEY!;
-    if (!serverKey) {
-      console.error("MIDTRANS_SERVER_KEY tidak diset di env");
-      return NextResponse.json({ error: "server misconfigured" }, { status: 500 });
-    }
-
-    const expected = crypto
+    const expectedSignature = crypto
       .createHash("sha512")
-      .update(String(order_id) + String(status_code) + String(gross_amount) + serverKey)
+      .update(order_id + status_code + gross_amount + serverKey)
       .digest("hex");
 
-    if (expected !== incomingSignature) {
-      console.warn("[MIDTRANS NOTIF] invalid signature", { expected, incomingSignature });
+    if (expectedSignature !== signature_key) {
       return NextResponse.json({ message: "invalid signature" }, { status: 403 });
     }
 
+    // HANYA UPDATE JIKA SUKSES
     if (transaction_status === "settlement" || transaction_status === "capture") {
-      // TODO: update database order dengan order_id -> set status "paid"
-      console.log(`[MIDTRANS NOTIF] order ${order_id} paid. payment_type=${payment_type}, fraud=${fraud_status}`);
-    } else {
-      console.log(`[MIDTRANS NOTIF] order ${order_id} status ${transaction_status}`);
+      await prisma.transactions.updateMany({
+        where: { order_id },
+        data: {
+          metode_pembayaran: payment_type,
+        },
+      });
+
+      console.log(` ORDER ${order_id} PAID via ${payment_type}`);
     }
 
     return NextResponse.json({ received: true });
-
   } catch (err) {
-    console.error("[MIDTRANS NOTIF] error:", err);
+    console.error("[MIDTRANS NOTIFICATION ERROR]", err);
     return NextResponse.json({ error: "internal" }, { status: 500 });
   }
 }

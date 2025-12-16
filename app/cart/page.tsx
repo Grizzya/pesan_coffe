@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import { useCart } from "@/context/CartContext";
 import Link from "next/link";
 import Image from "next/image";
-import "./cart.css";
+import { useRouter } from "next/navigation";
 import CheckoutModal from "@/components/CheckoutModal";
+import "./cart.css";
 
 declare global {
   interface Window {
@@ -14,169 +15,130 @@ declare global {
 }
 
 export default function CartPage() {
-  const { cartItems, removeFromCart, totalItems } = useCart();
+  const router = useRouter();
+  const { cartItems, removeFromCart, totalItems, clearCart } = useCart();
 
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // customer info akan dikirim dari modal
-  const [customerName, setCustomerName] = useState("");
-  const [customerEmail, setCustomerEmail] = useState("");
-
   const totalPrice = cartItems.reduce((total, item) => {
-    const priceAsNumber = Number(item.product.price) || 0;
+    const price = Number(item.product.price) || 0;
     const qty = item.quantity ?? 1;
-    return total + priceAsNumber * qty;
+    return total + price * qty;
   }, 0);
 
-  // dipanggil saat modal submit (nama + email)
-  const handleCheckoutSubmit = async (details: { name: string; email: string }) => {
-    setCustomerName(details.name);
-    setCustomerEmail(details.email);
+  // submit dari modal
+  const handleCheckoutSubmit = async (data: { name: string; email: string }) => {
     setIsCheckoutModalOpen(false);
-
-    // langsung panggil payment
-    await handlePayment(details.name, details.email);
+    await handlePayment(data.name, data.email);
   };
 
-  // HANDLE PAYMENT
   const handlePayment = async (name: string, email: string) => {
-    if (cartItems.length === 0) {
-      alert("Keranjang kosong.");
-      return;
-    }
+    if (cartItems.length === 0) return;
 
     setIsProcessing(true);
 
     try {
-      // item list untuk Midtrans
-      const itemsForMidtrans = cartItems.map((it) => ({
-        id: String(it.product.id),
-        price: Number(it.product.price),
-        quantity: Number(it.quantity ?? 1),
+      const items = cartItems.map((it) => ({
+        menu_id: Number(it.product.id),
         name: it.product.title,
+        price: Number(it.product.price),
+        qty: Number(it.quantity ?? 1),
       }));
 
-      // Panggil API transaksi Midtrans
       const res = await fetch("/api/payment/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name,
-          email,
-          total: totalPrice,
-          items: itemsForMidtrans, 
-        }),
+        body: JSON.stringify({ name, email, items }),
       });
 
       const data = await res.json();
 
-      if (!data || !data.token) {
-        console.error("Gagal mendapatkan token dari server:", data);
-        alert("Gagal membuat transaksi. Coba lagi.");
+      if (!res.ok || !data.token) {
+        alert("Gagal membuat transaksi");
         setIsProcessing(false);
         return;
       }
 
-      // Panggil Snap popup
       window.snap.pay(data.token, {
-        onSuccess: async function (result: any) {
-          console.log("Midtrans success:", result);
-          try {
-            await fetch("/api/payment/record", {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ result, customerName: name, customerEmail: email })
-            });
-          } catch (e) {
-            console.warn("Gagal kirim record ke backend:", e);
-          }
-
-          alert("Pembayaran berhasil. Terima kasih!");
-          setIsProcessing(false);
-          // TODO: kosongkan cart atau redirect ke halaman sukses
+        onSuccess: () => {
+          clearCart();
+          router.push("/cart/success");
         },
-
-        onPending: function (result: any) {
-          console.log("Midtrans pending:", result);
-          alert("Pembayaran menunggu (pending). Cek email untuk instruksi.");
+        onPending: () => {
+          alert("Pembayaran pending");
           setIsProcessing(false);
         },
-
-        onError: function (result: any) {
-          console.error("Midtrans error:", result);
-          alert("Terjadi kesalahan saat membayar.");
+        onError: () => {
+          alert("Pembayaran gagal");
           setIsProcessing(false);
         },
-
-        onClose: function () {
-          console.log("User menutup popup tanpa membayar");
+        onClose: () => {
           setIsProcessing(false);
         },
       });
     } catch (err) {
-      console.error("Error when creating midtrans transaction:", err);
-      alert("Terjadi kesalahan jaringan. Silakan coba lagi.");
+      console.error(err);
+      alert("Terjadi kesalahan");
       setIsProcessing(false);
     }
   };
-  // ====== END HANDLE PAYMENT ======
 
   return (
     <div className="cart-page-container">
       <nav className="cart-nav">
-        <Link href="/"> &larr; Kembali Belanja </Link>
+        <Link href="/">← Kembali Belanja</Link>
       </nav>
 
       <main className="cart-main">
         <h1>Keranjang Anda</h1>
 
         {totalItems === 0 ? (
-          <div className="cart-empty">
-            <p>Keranjang Anda masih kosong.</p>
-          </div>
+          <p>Keranjang kosong</p>
         ) : (
           <div className="cart-content">
             <div className="cart-items-list">
               {cartItems.map((item) => (
                 <div key={item.id} className="cart-item">
                   <Image
-                    src={item.product.image?? "/default.png"}
+                    src={item.product.image ?? "/default.png"}
                     alt={item.product.title}
                     width={80}
                     height={80}
-                    className="item-image"
                   />
                   <div className="item-details">
-                    <h3>{item.product.title}</h3>
+                  <h3>{item.product.title}</h3>
+
+                  {/* 🔥 OPSI DI BAWAH NAMA PRODUK */}
+                  {item.options && (
                     <p className="item-options">
-                      {item.options?.sugar}, {item.options?.ice}
+                      {Object.values(item.options)
+                        .map((opt: any) => opt.name)
+                        .join(" • ")}
                     </p>
-                    <p className="item-price">
-                      Rp {Number(item.product.price).toLocaleString("id-ID")}
-                    </p>
-                  </div>
-                  <button className="item-remove-button" onClick={() => removeFromCart(item.id)}>
-                    Hapus
-                  </button>
+                  )}
+
+                  <p className="item-price">
+                    Rp {Number(item.product.price).toLocaleString("id-ID")}
+                  </p>
+                </div>
+                    <button
+                      className="item-remove-button"
+                      onClick={() => removeFromCart(item.id)}
+                    >
+                      Hapus
+                    </button>
+
                 </div>
               ))}
             </div>
 
             <div className="cart-summary-box">
               <h2>Ringkasan Pesanan</h2>
-              <div className="summary-row">
-                <span>Total Harga ({totalItems} item)</span>
-                <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
-              </div>
-              <div className="summary-row total">
-                <span>Total Keseluruhan</span>
-                <span>Rp {totalPrice.toLocaleString("id-ID")}</span>
-              </div>
+              <p>Total: Rp {totalPrice.toLocaleString("id-ID")}</p>
 
               <button
                 className="checkout-button-full"
-                style={{ marginTop: "16px", width: "100%", cursor: "pointer" }}
                 onClick={() => setIsCheckoutModalOpen(true)}
                 disabled={isProcessing}
               >
@@ -188,7 +150,10 @@ export default function CartPage() {
       </main>
 
       {isCheckoutModalOpen && (
-        <CheckoutModal onClose={() => setIsCheckoutModalOpen(false)} onSubmit={handleCheckoutSubmit} />
+        <CheckoutModal
+          onClose={() => setIsCheckoutModalOpen(false)}
+          onSubmit={handleCheckoutSubmit}
+        />
       )}
     </div>
   );

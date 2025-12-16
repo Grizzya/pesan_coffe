@@ -1,101 +1,118 @@
-// components/ProductDetailModal.tsx
 "use client";
-import React, { useState } from "react";
+
+import React, { useEffect, useState } from "react";
 import "./ProductDetailModal.css";
 import { useCart } from "@/context/CartContext";
 
-// (Interface Product, ModalProps, Tipe Opsi Tuan)
+/* =====================
+   TYPES
+===================== */
+
 interface Product {
   id: number;
   title: string;
   price: number;
   image: string;
 }
+
 interface ModalProps {
   product: Product | null;
   onClose: () => void;
 }
-type SugarOption = "Normal Sugar" | "Less Sugar" | "No Sugar" | "Extra Sugar";
-type IceOption = "Normal Ice" | "Less Ice" | "No Ice" | "Extra Ice";
+
+interface Choice {
+  name: string;
+  price: number;
+}
+
+interface MenuOption {
+  id: number;
+  name: string;
+  choices: Choice[];
+}
+
+/* =====================
+   COMPONENT
+===================== */
 
 export default function ProductDetailModal({ product, onClose }: ModalProps) {
-  const [sugar, setSugar] = useState<SugarOption>("Normal Sugar");
-  const [ice, setIce] = useState<IceOption>("Normal Ice");
   const { addToCart } = useCart();
+
+  const [options, setOptions] = useState<MenuOption[]>([]);
+  const [selected, setSelected] = useState<Record<number, Choice>>({});
+  const [loading, setLoading] = useState(false);
+
+  /* =====================
+     FETCH OPTIONS
+  ===================== */
+
+  useEffect(() => {
+    if (!product) return;
+
+    setLoading(true);
+
+    fetch("/api/menus/options", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ menu_id: product.id }),
+    })
+      .then((res) => res.json())
+      .then((json) => {
+        const data: MenuOption[] = json.data || [];
+        setOptions(data);
+
+        const defaults: Record<number, Choice> = {};
+        data.forEach((opt) => {
+          if (opt.choices.length > 0) {
+            defaults[opt.id] = opt.choices[0];
+          }
+        });
+        setSelected(defaults);
+      })
+      .finally(() => setLoading(false));
+  }, [product]);
 
   if (!product) return null;
 
+  /* =====================
+     ADD TO CART (FIX)
+  ===================== */
+
   const handleAdd = () => {
-    addToCart(product, {
-      sugar: sugar,
-      ice: ice,
-    });
+    addToCart(product, selected);
     onClose();
   };
 
+  /* =====================
+     RENDER
+  ===================== */
+
   return (
-    // ⚙️ Animasi Latar Belakang (Fade In)
-    <div className="modal-overlay animate-in fade-in-0 duration-200" onClick={onClose}>
-      <div
-        onClick={(e) => e.stopPropagation()}
-        className={`
-          modal-content
-          w-[750px]
-          max-w-[95vw]
-          rounded-2xl
-          shadow-lg
-          flex flex-col
-          bg-[#f6f6f6]
-          
-          /* ⚙️ PERBAIKAN: 
-             Kita definisikan animasi Desktop DAN HP di sini.
-             'sm:' adalah prefix Tailwind untuk 'layar lebih besar dari HP'.
-          */
-          
-          /* Animasi HP (Default): Slide dari bawah */
-          animate-in fade-in-0 slide-in-from-bottom-full duration-300
-          
-          /* Animasi Desktop (sm:): Ganti ke Zoom In */
-          sm:zoom-in-95 sm:slide-in-from-bottom-0
-        `}
-      >
-        {/* Tombol Close */}
+    <div className="modal-overlay" onClick={onClose}>
+      <div className="modal-content" onClick={(e) => e.stopPropagation()}>
         <button className="modal-close-button" onClick={onClose}>
           &times;
         </button>
 
         <h2 className="modal-title">{product.title.toUpperCase()}</h2>
 
-        {/* Pilihan Opsi */}
-        <div className="modal-options-container">
-          {/* Opsi Gula */}
-          <OptionSection
-            title="Gula"
-            options={[
-              { name: "Normal Sugar", price: "Gratis" },
-              { name: "Less Sugar", price: "Gratis" },
-              { name: "No Sugar", price: "Gratis" },
-              { name: "Extra Sugar", price: "Gratis" },
-            ]}
-            selected={sugar}
-            setSelected={setSugar as (option: string) => void}
-          />
+        {loading && <p>Memuat opsi...</p>}
 
-          {/* Opsi Es */}
-          <OptionSection
-            title="Es"
-            options={[
-              { name: "Normal Ice", price: "Gratis" },
-              { name: "Less Ice", price: "Gratis" },
-              { name: "No Ice", price: "Gratis" },
-              { name: "Extra Ice", price: "Gratis" },
-            ]}
-            selected={ice}
-            setSelected={setIce as (option: string) => void}
-          />
-        </div>
+        {!loading &&
+          options.map((opt) => (
+            <OptionSection
+              key={opt.id}
+              option={opt}
+              selected={selected[opt.id]}
+              onSelect={(choice) =>
+                setSelected((prev) => ({
+                  ...prev,
+                  [opt.id]: choice,
+                }))
+              }
+            />
+          ))}
 
-        {/* Tombol Tambah */}
         <button className="modal-add-button" onClick={handleAdd}>
           TAMBAH
         </button>
@@ -104,35 +121,42 @@ export default function ProductDetailModal({ product, onClose }: ModalProps) {
   );
 }
 
+/* =====================
+   OPTION SECTION
+===================== */
+
 interface OptionSectionProps {
-  title: string;
-  options: { name: string; price: string }[];
-  selected: string;
-  setSelected: (option: string) => void;
+  option: MenuOption;
+  selected?: Choice;
+  onSelect: (choice: Choice) => void;
 }
-function OptionSection({ title, options, selected, setSelected }: OptionSectionProps) {
+
+function OptionSection({ option, selected, onSelect }: OptionSectionProps) {
   return (
     <div className="option-section">
-      <h3 className="option-title">{title}</h3>
+      <h3 className="option-title">{option.name}</h3>
+
       <div
         className="option-buttons"
         style={{
           display: "grid",
-          gridTemplateColumns: "repeat(4, 1fr)",
+          gridTemplateColumns: "repeat(auto-fit, minmax(120px, max-content))",
           gap: "12px",
-          justifyItems: "center",
-          alignItems: "center",
-          width: "100%",
+          justifyContent: "center",
         }}
       >
-        {options.map((opt) => (
+        {option.choices.map((choice) => (
           <button
-            key={opt.name}
-            className={`option-button ${selected === opt.name ? "selected" : ""}`}
-            onClick={() => setSelected(opt.name)}
+            key={choice.name}
+            className={`option-button ${
+              selected?.name === choice.name ? "selected" : ""
+            }`}
+            onClick={() => onSelect(choice)}
           >
-            {opt.name}
-            <span>{opt.price}</span>
+            {choice.name}
+            {choice.price > 0 && (
+              <span>+Rp {choice.price.toLocaleString()}</span>
+            )}
           </button>
         ))}
       </div>
