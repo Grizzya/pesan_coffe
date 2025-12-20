@@ -1,6 +1,7 @@
 "use client";
 import React from "react";
 import "./Card.css"; 
+import { Skeleton } from "@/components/ui/skeleton"
 
 interface CardProps {
   image: string;
