@@ -74,18 +74,28 @@ export default function ProductDetailModal({ product, onClose }: ModalProps) {
 
   if (!product) return null;
 
-  /* =====================
-     ADD TO CART (FIX)
-  ===================== */
+  //ADD TO CART
 
-  const handleAdd = () => {
-    addToCart(product, selected);
-    onClose();
-  };
+const handleAdd = () => {
+  const formattedOptions: Record<string, { label: string; name: string }> = {};
 
-  /* =====================
-     RENDER
-  ===================== */
+  options.forEach((opt) => {
+    const choice = selected[opt.id];
+    if (choice) {
+      formattedOptions[opt.name.toLowerCase().replace(/\s+/g, "_")] = {
+        label: opt.name,
+        name: choice.name,
+      };
+    }
+  });
+
+  addToCart(product, formattedOptions);
+  onClose();
+};
+
+
+  //RENDER
+ 
 
   return (
     <div className="modal-overlay" onClick={onClose}>
@@ -121,9 +131,8 @@ export default function ProductDetailModal({ product, onClose }: ModalProps) {
   );
 }
 
-/* =====================
-   OPTION SECTION
-===================== */
+//OPTION SECTION
+
 
 interface OptionSectionProps {
   option: MenuOption;

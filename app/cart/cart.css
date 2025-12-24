@@ -136,3 +136,47 @@
     grid-template-columns: 1fr;
   }
 }
+
+
+.cart-item-image {
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  overflow: hidden;
+  position: relative;
+}
+
+.cart-item-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 12px;
+}
+
+/* Skeleton style (HeroUI-like) */
+.image-skeleton {
+  width: 100%;
+  height: 100%;
+  border-radius: 12px;
+  background: linear-gradient(
+    100deg,
+    #e5e7eb 40%,
+    #f3f4f6 50%,
+    #e5e7eb 60%
+  );
+  background-size: 200% 100%;
+  animation: skeleton-loading 1.2s ease-in-out infinite;
+}
+
+.hidden {
+  display: none;
+}
+
+@keyframes skeleton-loading {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
+}

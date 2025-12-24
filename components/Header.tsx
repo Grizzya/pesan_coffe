@@ -66,15 +66,10 @@ export default function Header() {
             <Link href="/about" className="hover:text-gray-600 transition">
               📖 About
             </Link>
-          </SheetClose>
+          </SheetClose> 
           <SheetClose asChild>
             <Link href="/menu" className="hover:text-gray-600 transition">
               ☕ Menu
-            </Link>
-          </SheetClose>
-          <SheetClose asChild>
-            <Link href="/contact" className="hover:text-gray-600 transition">
-              📞 Contact
             </Link>
           </SheetClose>
         </nav>

@@ -1,11 +1,10 @@
-// app/api/products/route.ts
 import db from "@/lib/db";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const category = searchParams.get("category"); // nama kategori, contoh "espresso"
+    const category = searchParams.get("category");
 
     let sql = `
       SELECT 
@@ -21,8 +20,13 @@ export async function GET(request: NextRequest) {
       sql += `
         JOIN categories c ON c.id_kategori = m.category_id
         WHERE c.nama_kategori = ?
+          AND m.is_available = 1
       `;
       params.push(category);
+    } else {
+      sql += `
+        WHERE m.is_available = 1
+      `;
     }
 
     const [rows] = await db.query(sql, params);

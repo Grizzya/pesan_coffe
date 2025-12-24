@@ -23,7 +23,7 @@ const CardList: React.FC<CardListProps> = ({ category, onProductClick }) => {
       setLoading(true);
 
       try {
-        // kalau category kosong => ambil semua produk
+        // ambil semua produk
         const url = category
           ? `/api/products?category=${encodeURIComponent(category)}`
           : "/api/products";

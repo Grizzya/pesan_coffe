@@ -1,3 +1,5 @@
+/* components/Card.css */
+
 .card {
   background: #ffffff;
   border-radius: 16px;
@@ -8,8 +10,10 @@
   font-family: 'Inter', sans-serif;
   border: none;
   width: 169px;
-  height:269px;
-  
+  height: 269px;
+  /* Tambahkan cursor pointer agar user tahu ini bisa diklik */
+  cursor: pointer;
+  position: relative; /* Untuk positioning */
 }
 
 .card-image-container {
@@ -17,6 +21,8 @@
   width: 100%;
   border-radius: 12px;
   overflow: hidden;
+  /* Pastikan container punya tinggi minimal saat loading */
+  min-height: 149px; 
 }
 
 .card-image {
@@ -27,6 +33,8 @@
   border-top-right-radius: 80px;
   border-bottom-right-radius: 15px;
   border-bottom-left-radius: 15px;
+  /* Agar gambar tidak gepeng */
+  object-fit: cover; 
 }
 
 .card-plus {
@@ -43,6 +51,9 @@
   align-items: center;
   justify-content: center;
   font-size: 16px;
+  /* Pastikan tombol ada di atas gambar */
+  z-index: 10; 
+  cursor: pointer;
 }
 
 .card-content {
@@ -53,6 +64,10 @@
   margin: 0;
   font-size: 16px;
   color: #000;
+  /* Batasi judul agar tidak merusak layout */
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .card-content p {

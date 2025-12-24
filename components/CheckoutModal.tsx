@@ -1,13 +1,10 @@
-// components/CheckoutModal.tsx
 "use client";
 
 import React, { useState } from 'react';
-import "./CheckoutModal.css"; // Kita akan buat file CSS ini
+import "./CheckoutModal.css"; 
 
-// Tentukan props yang diterima
 interface CheckoutModalProps {
   onClose: () => void;
-  // Fungsi ini akan mengirimkan data Nama/Email kembali ke halaman keranjang
   onSubmit: (details: { name: string, email: string }) => void;
 }
 
@@ -23,12 +20,7 @@ export default function CheckoutModal({ onClose, onSubmit }: CheckoutModalProps)
       return;
     }
     setLoading(true);
-    
-    // Kirim data kembali ke halaman keranjang
     onSubmit({ name, email });
-    
-    // (Kita tidak tutup modal di sini, kita biarkan halaman keranjang
-    // yang menutupnya setelah API Midtrans dipanggil)
   };
 
   return (

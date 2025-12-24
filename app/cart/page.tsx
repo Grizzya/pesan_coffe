@@ -1,10 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { useCart } from "@/context/CartContext";
 import Link from "next/link";
-import Image from "next/image";
 import { useRouter } from "next/navigation";
+import { useCart } from "@/context/CartContext";
 import CheckoutModal from "@/components/CheckoutModal";
 import "./cart.css";
 
@@ -21,35 +20,59 @@ export default function CartPage() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
+  // TOTAL PRICE
+  
   const totalPrice = cartItems.reduce((total, item) => {
     const price = Number(item.product.price) || 0;
     const qty = item.quantity ?? 1;
     return total + price * qty;
   }, 0);
 
-  // submit dari modal
-  const handleCheckoutSubmit = async (data: { name: string; email: string }) => {
+  // HANDLE CHECKOUT SUBMIT
+  const handleCheckoutSubmit = async (data: {
+    name: string;
+    email: string;
+  }) => {
+    const isValidEmail = (email: string) =>
+      /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+
+    if (!isValidEmail(data.email)) {
+      alert("Format email tidak valid");
+      return;
+    }
+
     setIsCheckoutModalOpen(false);
     await handlePayment(data.name, data.email);
   };
 
+  // HANDLE PAYMENT
+ 
   const handlePayment = async (name: string, email: string) => {
-    if (cartItems.length === 0) return;
+    if (isProcessing || cartItems.length === 0) return;
 
     setIsProcessing(true);
 
     try {
-      const items = cartItems.map((it) => ({
-        menu_id: Number(it.product.id),
-        name: it.product.title,
-        price: Number(it.product.price),
-        qty: Number(it.quantity ?? 1),
-      }));
+      const items = cartItems.map((item) => {
+        const jumlah = Number(item.quantity ?? 1);
+        const harga = Number(item.product.price);
+
+        return {
+          menu_id: Number(item.product.id),
+          jumlah,
+          sub_total: harga * jumlah,
+          catatan: null,
+        };
+      });
 
       const res = await fetch("/api/payment/create", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name, email, items }),
+        body: JSON.stringify({
+          nama_pelanggan: name,
+          email,
+          items,
+        }),
       });
 
       const data = await res.json();
@@ -61,19 +84,26 @@ export default function CartPage() {
       }
 
       window.snap.pay(data.token, {
-        onSuccess: () => {
+        onSuccess: (result: any) => {
+          //  SIMPAN ORDER ID SEMENTARA
+          sessionStorage.setItem("last_order_id", result.order_id);
+
           clearCart();
           router.push("/cart/success");
         },
+
         onPending: () => {
           alert("Pembayaran pending");
           setIsProcessing(false);
         },
+
         onError: () => {
           alert("Pembayaran gagal");
           setIsProcessing(false);
         },
+
         onClose: () => {
+          alert("Pembayaran dibatalkan");
           setIsProcessing(false);
         },
       });
@@ -84,6 +114,9 @@ export default function CartPage() {
     }
   };
 
+  // =====================
+  // RENDER
+  // =====================
   return (
     <div className="cart-page-container">
       <nav className="cart-nav">
@@ -97,42 +130,70 @@ export default function CartPage() {
           <p>Keranjang kosong</p>
         ) : (
           <div className="cart-content">
+            {/* LIST ITEM */}
             <div className="cart-items-list">
               {cartItems.map((item) => (
                 <div key={item.id} className="cart-item">
-                  <Image
-                    src={item.product.image ?? "/default.png"}
-                    alt={item.product.title}
-                    width={80}
-                    height={80}
+                  {/* IMAGE */}
+                  <div className="cart-item-image">
+                  {item.product.image ? (
+                    <img
+                      src={item.product.image}
+                      alt={item.product.title}
+                      onError={(e) => {
+                        e.currentTarget.style.display = "none";
+                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
+                      }}
+                    />
+                  ) : null}
+
+                  {/* Skeleton */}
+                  <div
+                    className={`image-skeleton ${
+                      item.product.image ? "hidden" : ""
+                    }`}
                   />
-                  <div className="item-details">
-                  <h3>{item.product.title}</h3>
-
-                  {/* 🔥 OPSI DI BAWAH NAMA PRODUK */}
-                  {item.options && (
-                    <p className="item-options">
-                      {Object.values(item.options)
-                        .map((opt: any) => opt.name)
-                        .join(" • ")}
-                    </p>
-                  )}
-
-                  <p className="item-price">
-                    Rp {Number(item.product.price).toLocaleString("id-ID")}
-                  </p>
                 </div>
-                    <button
-                      className="item-remove-button"
-                      onClick={() => removeFromCart(item.id)}
-                    >
-                      Hapus
-                    </button>
 
+
+                  {/* DETAIL */}
+                  <div className="item-details">
+                    <h3>{item.product.title}</h3>
+
+                    {/* OPSI */}
+                    {item.options &&
+                      Object.keys(item.options).length > 0 && (
+                        <ul className="item-options">
+                          {Object.entries(item.options).map(
+                            ([key, opt]: any) => (
+                              <li key={key}>
+                                {opt.label ?? key}: {opt.name}
+                              </li>
+                            )
+                          )}
+                        </ul>
+                      )}
+
+                    <p>
+                      Rp{" "}
+                      {(
+                        Number(item.product.price) *
+                        (item.quantity ?? 1)
+                      ).toLocaleString("id-ID")}
+                    </p>
+
+                    <p>Jumlah: {item.quantity ?? 1}</p>
+                  </div>
+
+                  {/* ACTION */}
+                  <button onClick={() => removeFromCart(item.id)}>
+                    Hapus
+                  </button>
                 </div>
               ))}
             </div>
 
+            {/* SUMMARY */}
             <div className="cart-summary-box">
               <h2>Ringkasan Pesanan</h2>
               <p>Total: Rp {totalPrice.toLocaleString("id-ID")}</p>
@@ -140,9 +201,11 @@ export default function CartPage() {
               <button
                 className="checkout-button-full"
                 onClick={() => setIsCheckoutModalOpen(true)}
-                disabled={isProcessing}
+                disabled={isProcessing || totalItems === 0}
               >
-                {isProcessing ? "Memproses..." : "Lanjut ke Pembayaran"}
+                {isProcessing
+                  ? "Memproses..."
+                  : "Lanjut ke Pembayaran"}
               </button>
             </div>
           </div>
