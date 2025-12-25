@@ -13,6 +13,23 @@ declare global {
   }
 }
 
+/* =========================
+   HELPER: options -> catatan STRING
+   ========================= */
+function optionsToCatatan(options?: Record<string, any>) {
+  if (!options || Object.keys(options).length === 0) return null;
+
+  return Object.entries(options)
+    .map(([key, value]) => {
+      // support { label, name } atau string biasa
+      if (typeof value === "object" && value !== null) {
+        return `${value.label ?? key}: ${value.name ?? value}`;
+      }
+      return `${key}: ${value}`;
+    })
+    .join(", ");
+}
+
 export default function CartPage() {
   const router = useRouter();
   const { cartItems, removeFromCart, totalItems, clearCart } = useCart();
@@ -20,15 +37,18 @@ export default function CartPage() {
   const [isCheckoutModalOpen, setIsCheckoutModalOpen] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
 
-  // TOTAL PRICE
-  
+  /* =========================
+     TOTAL PRICE
+     ========================= */
   const totalPrice = cartItems.reduce((total, item) => {
     const price = Number(item.product.price) || 0;
     const qty = item.quantity ?? 1;
     return total + price * qty;
   }, 0);
 
-  // HANDLE CHECKOUT SUBMIT
+  /* =========================
+     CHECKOUT SUBMIT
+     ========================= */
   const handleCheckoutSubmit = async (data: {
     name: string;
     email: string;
@@ -45,8 +65,9 @@ export default function CartPage() {
     await handlePayment(data.name, data.email);
   };
 
-  // HANDLE PAYMENT
- 
+  /* =========================
+     HANDLE PAYMENT (FINAL)
+     ========================= */
   const handlePayment = async (name: string, email: string) => {
     if (isProcessing || cartItems.length === 0) return;
 
@@ -61,9 +82,12 @@ export default function CartPage() {
           menu_id: Number(item.product.id),
           jumlah,
           sub_total: harga * jumlah,
-          catatan: null,
+          catatan: optionsToCatatan(item.options), // ✅ STRING
         };
       });
+
+      // DEBUG (hapus jika sudah yakin)
+      console.log("PAYLOAD ITEMS:", items);
 
       const res = await fetch("/api/payment/create", {
         method: "POST",
@@ -78,6 +102,7 @@ export default function CartPage() {
       const data = await res.json();
 
       if (!res.ok || !data.token) {
+        console.error("PAYMENT ERROR:", data);
         alert("Gagal membuat transaksi");
         setIsProcessing(false);
         return;
@@ -85,23 +110,18 @@ export default function CartPage() {
 
       window.snap.pay(data.token, {
         onSuccess: (result: any) => {
-          //  SIMPAN ORDER ID SEMENTARA
           sessionStorage.setItem("last_order_id", result.order_id);
-
           clearCart();
           router.push("/cart/success");
         },
-
         onPending: () => {
           alert("Pembayaran pending");
           setIsProcessing(false);
         },
-
         onError: () => {
           alert("Pembayaran gagal");
           setIsProcessing(false);
         },
-
         onClose: () => {
           alert("Pembayaran dibatalkan");
           setIsProcessing(false);
@@ -114,9 +134,9 @@ export default function CartPage() {
     }
   };
 
-  // =====================
-  // RENDER
-  // =====================
+  /* =========================
+     RENDER
+     ========================= */
   return (
     <div className="cart-page-container">
       <nav className="cart-nav">
@@ -130,44 +150,39 @@ export default function CartPage() {
           <p>Keranjang kosong</p>
         ) : (
           <div className="cart-content">
-            {/* LIST ITEM */}
             <div className="cart-items-list">
               {cartItems.map((item) => (
                 <div key={item.id} className="cart-item">
-                  {/* IMAGE */}
                   <div className="cart-item-image">
-                  {item.product.image ? (
-                    <img
-                      src={item.product.image}
-                      alt={item.product.title}
-                      onError={(e) => {
-                        e.currentTarget.style.display = "none";
-                        e.currentTarget.nextElementSibling?.classList.remove("hidden");
-                      }}
+                    {item.product.image ? (
+                      <img
+                        src={item.product.image}
+                        alt={item.product.title}
+                        onError={(e) => {
+                          e.currentTarget.style.display = "none";
+                          e.currentTarget.nextElementSibling?.classList.remove(
+                            "hidden"
+                          );
+                        }}
+                      />
+                    ) : null}
+                    <div
+                      className={`image-skeleton ${
+                        item.product.image ? "hidden" : ""
+                      }`}
                     />
-                  ) : null}
+                  </div>
 
-                  {/* Skeleton */}
-                  <div
-                    className={`image-skeleton ${
-                      item.product.image ? "hidden" : ""
-                    }`}
-                  />
-                </div>
-
-
-                  {/* DETAIL */}
                   <div className="item-details">
                     <h3>{item.product.title}</h3>
 
-                    {/* OPSI */}
                     {item.options &&
                       Object.keys(item.options).length > 0 && (
                         <ul className="item-options">
                           {Object.entries(item.options).map(
                             ([key, opt]: any) => (
                               <li key={key}>
-                                {opt.label ?? key}: {opt.name}
+                                {opt.label ?? key}: {opt.name ?? opt}
                               </li>
                             )
                           )}
@@ -185,7 +200,6 @@ export default function CartPage() {
                     <p>Jumlah: {item.quantity ?? 1}</p>
                   </div>
 
-                  {/* ACTION */}
                   <button onClick={() => removeFromCart(item.id)}>
                     Hapus
                   </button>
@@ -193,7 +207,6 @@ export default function CartPage() {
               ))}
             </div>
 
-            {/* SUMMARY */}
             <div className="cart-summary-box">
               <h2>Ringkasan Pesanan</h2>
               <p>Total: Rp {totalPrice.toLocaleString("id-ID")}</p>
@@ -203,9 +216,7 @@ export default function CartPage() {
                 onClick={() => setIsCheckoutModalOpen(true)}
                 disabled={isProcessing || totalItems === 0}
               >
-                {isProcessing
-                  ? "Memproses..."
-                  : "Lanjut ke Pembayaran"}
+                {isProcessing ? "Memproses..." : "Lanjut ke Pembayaran"}
               </button>
             </div>
           </div>
